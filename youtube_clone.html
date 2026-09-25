@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StreamTube - Watch & Share</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            yt: {
+              bg: '#0f0f0f',
+              surface: '#272727',
+              hover: '#3f3f3f',
+              red: '#ff0000',
+              text: '#f1f1f1',
+              muted: '#aaa'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f0f0f;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #3f3f3f;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .hide-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .video-card:hover .play-overlay {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-yt-bg text-yt-text font-sans antialiased overflow-x-hidden min-h-screen flex flex-col">
+
+  <!-- Header / Navigation Bar -->
+  <header class="fixed top-0 left-0 right-0 h-14 bg-yt-bg border-b border-zinc-800 z-40 flex items-center justify-between px-4">
+    <!-- Left Section: Logo & Toggle -->
+    <div class="flex items-center gap-4">
+      <button id="toggleSidebar" class="p-2 hover:bg-yt-surface rounded-full text-xl text-white transition-colors">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <a href="#" onclick="showSection('home'); return false;" class="flex items-center gap-1 font-bold text-xl tracking-tighter">
+        <div class="bg-red-600 text-white p-1 px-2 rounded-lg flex items-center justify-center">
+          <i class="fa-solid fa-play text-xs"></i>
+        </div>
+        <span class="text-white font-semibold tracking-normal text-lg">StreamTube</span>
+        <span class="text-[10px] text-zinc-400 -mt-2">US</span>
+      </a>
+    </div>
+
+    <!-- Center Section: Search Bar -->
+    <div class="flex-1 max-w-2xl mx-4 hidden sm:flex items-center justify-center">
+      <div class="flex w-full max-w-lg items-center">
+        <div class="flex w-full items-center bg-[#121212] border border-zinc-700 rounded-l-full px-4 py-2 focus-within:border-blue-500">
+          <input 
+            type="text" 
+            id="searchInput"
+            placeholder="Search videos, creators, categories..." 
+            class="w-full bg-transparent text-sm focus:outline-none text-white placeholder-zinc-400"
+            onkeyup="handleSearch(event)"
+          >
+          <button id="clearSearch" class="hidden text-zinc-400 hover:text-white mr-1" onclick="clearSearchInput()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <button 
+          onclick="triggerSearch()" 
+          class="bg-zinc-800 border border-l-0 border-zinc-700 hover:bg-zinc-700 px-6 py-2 rounded-r-full text-zinc-300 transition"
+          title="Search"
+        >
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </div>
+      <button class="ml-3 p-3 bg-zinc-800 hover:bg-zinc-700 rounded-full text-white text-sm transition" title="Search with voice">
+        <i class="fa-solid fa-microphone"></i>
+      </button>
+    </div>
+
+    <!-- Right Section: Actions & User Avatar -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <button class="sm:hidden p-2 hover:bg-yt-surface rounded-full text-zinc-300" onclick="toggleMobileSearch()">
+        <i class="fa-solid fa-magnifying-glass text-lg"></i>
+      </button>
+      <button class="hidden sm:flex items-center gap-2 bg-yt-surface hover:bg-yt-hover px-3 py-1.5 rounded-full text-sm font-medium transition" onclick="showNotification('Upload feature coming soon!')">
+        <i class="fa-solid fa-plus text-base"></i>
+        <span>Create</span>
+      </button>
+      <button class="p-2 hover:bg-yt-surface rounded-full text-zinc-300 relative" onclick="showNotification('No new notifications')">
+        <i class="fa-regular fa-bell text-lg"></i>
+        <span class="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full"></span>
+      </button>
+      <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm cursor-pointer hover:opacity-90">
+        U
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Search Bar Bar Overlay -->
+  <div id="mobileSearchOverlay" class="fixed top-0 left-0 right-0 h-14 bg-yt-bg border-b border-zinc-800 z-50 hidden items-center px-4 gap-2">
+    <button onclick="toggleMobileSearch()" class="p-2 text-zinc-300"><i class="fa-solid fa-arrow-left"></i></button>
+    <input type="text" id="mobileSearchInput" placeholder="Search StreamTube" class="flex-1 bg-zinc-800 text-white rounded-full px-4 py-1.5 text-sm focus:outline-none" onkeyup="handleSearch(event)">
+    <button onclick="triggerSearch()" class="p-2 text-zinc-300"><i class="fa-solid fa-magnifying-glass"></i></button>
+  </div>
+
+  <!-- Main Container -->
+  <div class="flex pt-14 min-h-[calc(100vh-3.5rem)]">
+    
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="w-64 bg-yt-bg border-r border-zinc-800 fixed left-0 top-14 bottom-0 z-30 transition-all duration-300 overflow-y-auto hide-scrollbar hidden md:block">
+      <div class="p-3 space-y-1">
+        <!-- Main Links -->
+        <a href="#" onclick="showSection('home'); return false;" id="nav-home" class="nav-item flex items-center gap-6 px-3 py-2.5 rounded-xl bg-yt-surface font-medium text-white hover:bg-yt-hover transition">
+          <i class="fa-solid fa-house text-lg w-6 text-center"></i>
+          <span>Home</span>
+        </a>
+        <a href="#" onclick="filterByCategory('Trending'); return false;" id="nav-trending" class="nav-item flex items-center gap-6 px-3 py-2.5 rounded-xl font-medium text-zinc-300 hover:bg-yt-surface transition">
+          <i class="fa-solid fa-fire text-lg w-6 text-center"></i>
+          <span>Trending</span>
+        </a>
+        <a href="#" onclick="showSection('subscriptions'); return false;" id="nav-subscriptions" class="nav-item flex items-center gap-6 px-3 py-2.5 rounded-xl font-medium text-zinc-300 hover:bg-yt-surface transition">
+          <i class="fa-solid fa-layer-group text-lg w-6 text-center"></i>
+          <span>Subscriptions</span>
+        </a>
+
+        <hr class="border-zinc-800 my-3">
+
+        <!-- Library Links -->
+        <div class="px-3 text-xs font-semibold text-zinc-400 mb-1 uppercase tracking-wider">You</div>
+        <a href="#" onclick="showSection('library'); return false;" id="nav-library" class="nav-item flex items-center gap-6 px-3 py-2.5 rounded-xl font-medium text-zinc-300 hover:bg-yt-surface transition">
+          <i class="fa-solid fa-folder text-lg w-6 text-center"></i>
+          <span>Library</span>
+        </a>
+        <a href="#" onclick="showSection('history'); return false;" id="nav-history" class="nav-item flex items-center gap-6 px-3 py-2.5 rounded-xl font-medium text-zinc-300 hover:bg-yt-surface transition">
+          <i class="fa-solid fa-clock-rotate-left text-lg w-6 text-center"></i>
+          <span>History</span>
+        </a>
+        <a href="#" onclick="showSection('liked'); return false;" id="nav-liked" class="nav-item flex items-center gap-6 px-3 py-2.5 rounded-xl font-medium text-zinc-300 hover:bg-yt-surface transition">
+          <i class="fa-solid fa-thumbs-up text-lg w-6 text-center"></i>
+          <span>Liked Videos</span>
+        </a>
+
+        <hr class="border-zinc-800 my-3">
+
+        <!-- Subscribed Channels -->
+        <div class="px-3 text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wider">Subscriptions</div>
+        <div id="sidebarSubscriptions" class="space-y-1">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </aside>
+
+    <!-- Content Area -->
+    <main id="mainContent" class="flex-1 md:ml-64 p-4 lg:p-6 transition-all duration-300 w-full">
+      
+      <!-- Category Filters (Home view only) -->
+      <div id="categoryContainer" class="mb-6 flex gap-2 overflow-x-auto pb-2 hide-scrollbar items-center">
+        <!-- Generated by JS -->
+      </div>
+
+      <!-- Video Grid Section -->
+      <section id="feedSection">
+        <div class="flex items-center justify-between mb-4">
+          <h2 id="feedTitle" class="text-xl font-bold text-white">Recommended</h2>
+          <span id="resultsCount" class="text-xs text-zinc-400 hidden"></span>
+        </div>
+
+        <!-- Video Cards Grid -->
+        <div id="videoGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="emptyState" class="hidden flex-col items-center justify-center py-20 text-center">
+          <i class="fa-solid fa-video-slash text-5xl text-zinc-600 mb-4"></i>
+          <h3 class="text-xl font-semibold text-zinc-300 mb-1">No videos found</h3>
+          <p class="text-zinc-500 text-sm max-w-sm">Try searching for something else or browse different categories.</p>
+          <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-yt-surface hover:bg-yt-hover text-white rounded-full text-sm font-medium transition">
+            Clear Filters
+          </button>
+        </div>
+      </section>
+
+      <!-- Generic Page Section (Subscriptions, History, Liked, etc.) -->
+      <section id="customSection" class="hidden">
+        <div id="customSectionHeader" class="mb-6 pb-4 border-b border-zinc-800 flex items-center gap-4">
+          <!-- Dynamic Section Info -->
+        </div>
+        <div id="customSectionContent" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-4 gap-y-8">
+          <!-- Rendered items -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Video Player Modal / Detail Overlay -->
+  <div id="videoModal" class="fixed inset-0 bg-yt-bg/95 z-50 hidden overflow-y-auto">
+    <!-- Close & Back Controls -->
+    <div class="sticky top-0 bg-yt-bg/90 backdrop-blur z-20 px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+      <button onclick="closeVideoModal()" class="flex items-center gap-2 text-zinc-300 hover:text-white bg-yt-surface hover:bg-yt-hover px-3 py-1.5 rounded-full text-sm transition">
+        <i class="fa-solid fa-arrow-left"></i>
+        <span>Back to Feed</span>
+      </button>
+      <div class="text-sm font-medium text-zinc-400 truncate max-w-md hidden md:block" id="modalTopTitle">
+        Video Player
+      </div>
+      <button onclick="closeVideoModal()" class="text-zinc-400 hover:text-white text-xl p-1">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Modal Content Grid -->
+    <div class="max-w-7xl mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Primary Video Container (2 Cols on Large Screens) -->
+      <div class="lg:col-span-2 space-y-4">
+        
+        <!-- HTML5 Video Player Frame -->
+        <div class="relative bg-black rounded-2xl overflow-hidden aspect-video shadow-2xl group border border-zinc-800">
+          <video 
+            id="mainVideoPlayer" 
+            controls 
+            autoplay 
+            class="w-full h-full object-contain"
+            src=""
+          >
+            Your browser does not support HTML5 video playback.
+          </video>
+        </div>
+
+        <!-- Video Info Header -->
+        <div>
+          <h1 id="modalVideoTitle" class="text-xl sm:text-2xl font-bold text-white mb-2 leading-tight">Video Title</h1>
+          
+          <!-- Channel Controls & Action Buttons -->
+          <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+            
+            <!-- Channel Details -->
+            <div class="flex items-center gap-3">
+              <img id="modalChannelAvatar" src="" alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-zinc-700">
+              <div>
+                <h3 id="modalChannelName" class="font-semibold text-white flex items-center gap-1.5">
+                  Channel Name
+                  <i class="fa-solid fa-circle-check text-xs text-zinc-400" title="Verified"></i>
+                </h3>
+                <p id="modalChannelSubs" class="text-xs text-zinc-400">1.2M subscribers</p>
+              </div>
+              <button 
+                id="subscribeBtn" 
+                onclick="toggleSubscribe()" 
+                class="ml-2 px-4 py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-full text-sm transition shadow"
+              >
+                Subscribe
+              </button>
+            </div>
+
+            <!-- Action Buttons Bar -->
+            <div class="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+              <!-- Like/Dislike Group -->
+              <div class="flex items-center bg-yt-surface rounded-full overflow-hidden">
+                <button id="likeBtn" onclick="toggleLike()" class="flex items-center gap-2 px-4 py-2 hover:bg-yt-hover text-sm font-medium border-r border-zinc-700 transition">
+                  <i class="fa-regular fa-thumbs-up text-base" id="likeIcon"></i>
+                  <span id="modalLikesCount">0</span>
+                </button>
+                <button id="dislikeBtn" onclick="toggleDislike()" class="px-3 py-2 hover:bg-yt-hover text-sm text-zinc-300 transition">
+                  <i class="fa-regular fa-thumbs-down text-base" id="dislikeIcon"></i>
+                </button>
+              </div>
+
+              <!-- Share Button -->
+              <button onclick="shareVideo()" class="flex items-center gap-2 px-4 py-2 bg-yt-surface hover:bg-yt-hover text-sm font-medium rounded-full transition">
+                <i class="fa-solid fa-share"></i>
+                <span>Share</span>
+              </button>
+
+              <!-- Download Button -->
+              <button onclick="showNotification('Simulating high quality download...')" class="flex items-center gap-2 px-4 py-2 bg-yt-surface hover:bg-yt-hover text-sm font-medium rounded-full transition">
+                <i class="fa-solid fa-download"></i>
+                <span class="hidden sm:inline">Download</span>
+              </button>
+
+              <!-- More Options -->
+              <button onclick="showNotification('Added to Watch Later')" class="p-2 bg-yt-surface hover:bg-yt-hover rounded-full text-sm transition">
+                <i class="fa-solid fa-ellipsis"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Description Box -->
+          <div class="mt-4 bg-yt-surface/60 hover:bg-yt-surface p-4 rounded-xl text-sm transition cursor-pointer" onclick="this.classList.toggle('line-clamp-none')">
+            <div class="flex items-center gap-3 text-zinc-300 font-medium mb-1">
+              <span id="modalViewsCount">0 views</span>
+              <span id="modalUploadTime">Recently</span>
+              <div class="flex gap-1" id="modalTagsContainer">
+                <!-- Tags rendered here -->
+              </div>
+            </div>
+            <p id="modalDescription" class="text-zinc-300 whitespace-pre-line leading-relaxed">
+              Detailed video description goes here...
+            </p>
+          </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="mt-8 pt-4">
+          <div class="flex items-center gap-6 mb-6">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>Comments</span>
+              <span id="commentsCount" class="text-sm font-normal text-zinc-400">(0)</span>
+            </h3>
+            <button class="flex items-center gap-2 text-sm text-zinc-300 hover:text-white font-medium">
+              <i class="fa-solid fa-arrow-down-wide-short"></i>
+              <span>Sort by</span>
+            </button>
+          </div>
+
+          <!-- Add Comment Box -->
+          <div class="flex items-start gap-4 mb-8">
+            <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-sm text-white flex-shrink-0">
+              U
+            </div>
+            <div class="flex-1">
+              <input 
+                type="text" 
+                id="commentInput" 
+                placeholder="Add a comment..." 
+                class="w-full bg-transparent border-b border-zinc-700 focus:border-white py-1.5 text-sm focus:outline-none transition text-white"
+                onkeypress="if(event.key === 'Enter') addComment()"
+              >
+              <div class="flex justify-end gap-2 mt-2">
+                <button onclick="document.getElementById('commentInput').value=''" class="px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white rounded-full transition">
+                  Cancel
+                </button>
+                <button onclick="addComment()" class="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-full transition shadow">
+                  Comment
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments Feed -->
+          <div id="commentsList" class="space-y-6">
+            <!-- Dynamic comments -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar / Recommended Videos -->
+      <div class="space-y-4">
+        <h3 class="text-lg font-bold text-white mb-2">Up Next</h3>
+        <div id="recommendedList" class="space-y-3">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Notification Toast Modal -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-zinc-800 text-white px-4 py-3 rounded-xl shadow-2xl border border-zinc-700 hidden items-center gap-3 z-50 transition-all duration-300">
+    <i class="fa-solid fa-circle-info text-blue-400"></i>
+    <span id="toastMessage" class="text-sm">Notification message</span>
+  </div>
+
+  <script>
+    /* Global Application State */
+    let currentCategory = 'All';
+    let searchQuery = '';
+    let currentVideoId = null;
+    let userLikedVideos = new Set();
+    let userDislikedVideos = new Set();
+    let subscribedChannels = new Set(['TechVision', 'CodeCraft', 'SoundScape']);
+    let watchHistory = [];
+
+    /* Sample Categories */
+    const categories = ['All', 'Gaming', 'Music', 'Coding', 'Tech', 'Cooking', 'Trending', 'Fitness', 'Podcast'];
+
+    /* Royalty-free HTML5 video samples */
+    const sampleVideos = [
+      {
+        id: 'v1',
+        title: 'Big Buck Bunny 4K Official Trailer & Short Animation',
+        category: 'Gaming',
+        duration: '09:56',
+        views: '4.2M',
+        viewsRaw: 4200000,
+        uploaded: '2 days ago',
+        channelName: 'Blender Studio',
+        channelAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        likes: 145000,
+        description: 'Big Buck Bunny tells the story of a giant rabbit with a heart bigger than himself. When one sunny day three rodents rudely harass him, something snaps; and the rabbit decides to take revenge!',
+        tags: ['#animation', '#3d', '#blender', '#4k'],
+        comments: [
+          { name: 'Alex Rivers', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80', text: 'Classic open-source masterwork! The physics still look awesome.', time: '1 day ago', likes: 24 },
+          { name: 'DevSam', avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80', text: 'Can never get tired of watching this masterpiece.', time: '5 hours ago', likes: 8 }
+        ]
+      },
+      {
+        id: 'v2',
+        title: 'Building a Fullstack Web App with Modern UI Architecture',
+        category: 'Coding',
+        duration: '14:20',
+        views: '890K',
+        viewsRaw: 890000,
+        uploaded: '1 week ago',
+        channelName: 'CodeCraft',
+        channelAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        likes: 42000,
+        description: 'Learn step-by-step how to construct responsive, highly interactive web applications using clean JavaScript and modern design primitives.',
+        tags: ['#webdev', '#coding', '#frontend'],
+        comments: [
+          { name: 'Elena Code', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80', text: 'This cleared up so many layout questions for me. Thanks!', time: '3 days ago', likes: 12 }
+        ]
+      },
+      {
+        id: 'v3',
+        title: 'For Bigger Blazes - High Definition Cinematic Nature Visuals',
+        category: 'Tech',
+        duration: '00:15',
+        views: '1.8M',
+        viewsRaw: 1800000,
+        uploaded: '3 weeks ago',
+        channelName: 'TechVision',
+        channelAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1518173946687-a4c8a383392e?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        likes: 98000,
+        description: 'Experience stunning high-framerate chromatic test footage featuring vibrant outdoor landscapes and dynamic contrast performance tests.',
+        tags: ['#cinematic', '#4k', '#nature', '#tech'],
+        comments: []
+      },
+      {
+        id: 'v4',
+        title: 'Relaxing Ambient Chill Beats for Focus and Deep Work',
+        category: 'Music',
+        duration: '10:00',
+        views: '3.1M',
+        viewsRaw: 3100000,
+        uploaded: '1 month ago',
+        channelName: 'SoundScape',
+        channelAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        likes: 210000,
+        description: 'Deep focus music designed to increase productivity, relieve stress, and boost concentration during long study sessions.',
+        tags: ['#music', '#ambient', '#lofi', '#study'],
+        comments: [
+          { name: 'LoFiFan99', avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80', text: 'Helped me pass my final exams!', time: '2 weeks ago', likes: 45 }
+        ]
+      },
+      {
+        id: 'v5',
+        title: 'Mastering Italian Artisanal Pasta from Scratch',
+        category: 'Cooking',
+        duration: '18:45',
+        views: '560K',
+        viewsRaw: 560000,
+        uploaded: '4 days ago',
+        channelName: 'Gourmet Kitchen',
+        channelAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
+        likes: 34000,
+        description: 'Join Chef Marco as he reveals the secrets to traditional hand-rolled tagliatelle and authentic slow-cooked sauces.',
+        tags: ['#cooking', '#food', '#recipe', '#pasta'],
+        comments: []
+      },
+      {
+        id: 'v6',
+        title: 'Full Body HIIT Workout Routine - No Equipment Needed',
+        category: 'Fitness',
+        duration: '25:00',
+        views: '1.2M',
+        viewsRaw: 1200000,
+        uploaded: '2 weeks ago',
+        channelName: 'PulseFit',
+        channelAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4',
+        likes: 76000,
+        description: 'Burn calories and build endurance with this fast-paced 25-minute full body interval training workout.',
+        tags: ['#fitness', '#workout', '#hiit', '#health'],
+        comments: []
+      },
+      {
+        id: 'v7',
+        title: 'The Future of Quantum Computing and AI Integration',
+        category: 'Tech',
+        duration: '12:30',
+        views: '950K',
+        viewsRaw: 950000,
+        uploaded: '3 days ago',
+        channelName: 'TechVision',
+        channelAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        likes: 54000,
+        description: 'An in-depth look at how next-generation quantum chips will accelerate artificial intelligence models.',
+        tags: ['#tech', '#quantum', '#ai', '#future'],
+        comments: []
+      },
+      {
+        id: 'v8',
+        title: 'Top 10 Indie Games Coming Out This Year You Must Play',
+        category: 'Gaming',
+        duration: '15:10',
+        views: '2.4M',
+        viewsRaw: 2400000,
+        uploaded: '5 days ago',
+        channelName: 'PixelRealm',
+        channelAvatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=100&auto=format&fit=crop&q=80',
+        thumbnail: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+        likes: 120000,
+        description: 'Counting down the most creative, promising indie titles releasing across PC and console platforms.',
+        tags: ['#gaming', '#indie', '#top10'],
+        comments: []
+      }
+    ];
+
+    /* Initialize App on Load */
+    window.onload = function() {
+      renderCategories();
+      renderFeed();
+      renderSidebarSubscriptions();
+      setupEventListeners();
+    };
+
+    /* Render Category Pills Bar */
+    function renderCategories() {
+      const container = document.getElementById('categoryContainer');
+      container.innerHTML = categories.map(cat => `
+        <button 
+          onclick="filterByCategory('${cat}')" 
+          class="px-3.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+            currentCategory === cat 
+              ? 'bg-white text-black font-semibold' 
+              : 'bg-yt-surface hover:bg-yt-hover text-zinc-200'
+          }"
+        >
+          ${cat}
+        </button>
+      `).join('');
+    }
+
+    /* Filter by Selected Category */
+    function filterByCategory(category) {
+      currentCategory = category;
+      renderCategories();
+      showSection('home');
+      
+      const titleElement = document.getElementById('feedTitle');
+      if (category === 'All') {
+        titleElement.innerText = 'Recommended';
+      } else {
+        titleElement.innerText = category;
+      }
+      renderFeed();
+    }
+
+    /* Get Filtered Video List */
+    function getFilteredVideos() {
+      return sampleVideos.filter(video => {
+        const matchesCategory = currentCategory === 'All' || 
+          (currentCategory === 'Trending' ? video.viewsRaw > 1000000 : video.category === currentCategory);
+        
+        const matchesSearch = searchQuery === '' || 
+          video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          video.channelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          video.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+        return matchesCategory && matchesSearch;
+      });
+    }
+
+    /* Render Main Home Video Grid */
+    function renderFeed() {
+      const grid = document.getElementById('videoGrid');
+      const emptyState = document.getElementById('emptyState');
+      const filtered = getFilteredVideos();
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      emptyState.classList.remove('flex');
+
+      grid.innerHTML = filtered.map(video => `
+        <div class="video-card flex flex-col gap-3 cursor-pointer group" onclick="openVideoModal('${video.id}')">
+          <!-- Thumbnail Container -->
+          <div class="relative aspect-video rounded-xl overflow-hidden bg-zinc-800">
+            <img 
+              src="${video.thumbnail}" 
+              alt="${video.title}" 
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+            >
+            <span class="absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-2 py-0.5 rounded">
+              ${video.duration}
+            </span>
+            <div class="play-overlay absolute inset-0 bg-black/30 opacity-0 transition-opacity flex items-center justify-center">
+              <div class="w-12 h-12 bg-red-600/90 rounded-full flex items-center justify-center text-white shadow-lg">
+                <i class="fa-solid fa-play ml-0.5"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Details Metadata -->
+          <div class="flex gap-3 px-0.5">
+            <img 
+              src="${video.channelAvatar}" 
+              alt="${video.channelName}" 
+              class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5"
+            >
+            <div class="flex flex-col">
+              <h3 class="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-blue-400 transition-colors">
+                ${video.title}
+              </h3>
+              <p class="text-xs text-zinc-400 mt-1 flex items-center gap-1 hover:text-zinc-200">
+                ${video.channelName}
+                <i class="fa-solid fa-circle-check text-[10px]"></i>
+              </p>
+              <div class="text-xs text-zinc-400 flex items-center gap-1 mt-0.5">
+                <span>${video.views} views</span>
+                <span>•</span>
+                <span>${video.uploaded}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* Search Logic */
+    function handleSearch(e) {
+      const val = e.target.value;
+      searchQuery = val.trim();
+      
+      const clearBtn = document.getElementById('clearSearch');
+      if (searchQuery.length > 0) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+
+      if (e.key === 'Enter') {
+        triggerSearch();
+      }
+    }
+
+    function triggerSearch() {
+      const desktopVal = document.getElementById('searchInput').value;
+      const mobileVal = document.getElementById('mobileSearchInput').value;
+      searchQuery = (desktopVal || mobileVal).trim();
+      
+      showSection('home');
+      renderFeed();
+
+      const titleEl = document.getElementById('feedTitle');
+      if (searchQuery) {
+        titleEl.innerText = `Search results for "${searchQuery}"`;
+      } else {
+        titleEl.innerText = 'Recommended';
+      }
+    }
+
+    function clearSearchInput() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('mobileSearchInput').value = '';
+      document.getElementById('clearSearch').classList.add('hidden');
+      searchQuery = '';
+      renderFeed();
+      document.getElementById('feedTitle').innerText = 'Recommended';
+    }
+
+    function toggleMobileSearch() {
+      const overlay = document.getElementById('mobileSearchOverlay');
+      overlay.classList.toggle('hidden');
+      overlay.classList.toggle('flex');
+    }
+
+    /* Video Player Modal Controls */
+    function openVideoModal(videoId) {
+      const video = sampleVideos.find(v => v.id === videoId);
+      if (!video) return;
+
+      currentVideoId = videoId;
+      
+      // Add to watch history
+      if (!watchHistory.some(v => v.id === videoId)) {
+        watchHistory.unshift(video);
+      }
+
+      // Set video player src
+      const player = document.getElementById('mainVideoPlayer');
+      player.src = video.videoUrl;
+
+      // Update Modal Meta Details
+      document.getElementById('modalTopTitle').innerText = video.title;
+      document.getElementById('modalVideoTitle').innerText = video.title;
+      document.getElementById('modalChannelAvatar').src = video.channelAvatar;
+      document.getElementById('modalChannelName').innerHTML = `${video.channelName} <i class="fa-solid fa-circle-check text-xs text-zinc-400"></i>`;
+      document.getElementById('modalLikesCount').innerText = formatNumber(video.likes + (userLikedVideos.has(videoId) ? 1 : 0));
+      document.getElementById('modalViewsCount').innerText = `${video.views} views`;
+      document.getElementById('modalUploadTime').innerText = video.uploaded;
+      document.getElementById('modalDescription').innerText = video.description;
+
+      // Render Tags
+      document.getElementById('modalTagsContainer').innerHTML = video.tags.map(tag => `
+        <span class="text-blue-400 hover:underline cursor-pointer" onclick="event.stopPropagation(); searchQuery='${tag.replace('#','')}'; triggerSearch(); closeVideoModal();">${tag}</span>
+      `).join(' ');
+
+      // Update Subscription Button State
+      updateSubscribeButtonUI(video.channelName);
+
+      // Update Like/Dislike UI
+      updateLikeIcons();
+
+      // Render Comments List
+      renderComments(video.comments);
+
+      // Render Up Next Recommendations
+      renderRecommended(videoId);
+
+      // Display Modal
+      document.getElementById('videoModal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeVideoModal() {
+      const modal = document.getElementById('videoModal');
+      const player = document.getElementById('mainVideoPlayer');
+      
+      player.pause();
+      player.src = '';
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    /* Render Up Next Sidebar List */
+    function renderRecommended(currentId) {
+      const container = document.getElementById('recommendedList');
+      const recs = sampleVideos.filter(v => v.id !== currentId);
+
+      container.innerHTML = recs.map(v => `
+        <div class="flex gap-3 cursor-pointer group" onclick="openVideoModal('${v.id}')">
+          <div class="relative w-40 aspect-video rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+            <img src="${v.thumbnail}" alt="${v.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+            <span class="absolute bottom-1 right-1 bg-black/80 text-white text-[10px] font-medium px-1 rounded">${v.duration}</span>
+          </div>
+          <div class="flex flex-col justify-start">
+            <h4 class="text-xs font-semibold text-white line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">${v.title}</h4>
+            <p class="text-[11px] text-zinc-400 mt-1">${v.channelName}</p>
+            <p class="text-[11px] text-zinc-400">${v.views} views • ${v.uploaded}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* Like / Dislike Handlers */
+    function toggleLike() {
+      if (!currentVideoId) return;
+      
+      if (userLikedVideos.has(currentVideoId)) {
+        userLikedVideos.delete(currentVideoId);
+      } else {
+        userLikedVideos.add(currentVideoId);
+        userDislikedVideos.delete(currentVideoId);
+      }
+      
+      const video = sampleVideos.find(v => v.id === currentVideoId);
+      const totalLikes = video.likes + (userLikedVideos.has(currentVideoId) ? 1 : 0);
+      document.getElementById('modalLikesCount').innerText = formatNumber(totalLikes);
+      
+      updateLikeIcons();
+    }
+
+    function toggleDislike() {
+      if (!currentVideoId) return;
+
+      if (userDislikedVideos.has(currentVideoId)) {
+        userDislikedVideos.delete(currentVideoId);
+      } else {
+        userDislikedVideos.add(currentVideoId);
+        if (userLikedVideos.has(currentVideoId)) {
+          userLikedVideos.delete(currentVideoId);
+          const video = sampleVideos.find(v => v.id === currentVideoId);
+          document.getElementById('modalLikesCount').innerText = formatNumber(video.likes);
+        }
+      }
+      updateLikeIcons();
+    }
+
+    function updateLikeIcons() {
+      const likeIcon = document.getElementById('likeIcon');
+      const dislikeIcon = document.getElementById('dislikeIcon');
+
+      if (userLikedVideos.has(currentVideoId)) {
+        likeIcon.className = "fa-solid fa-thumbs-up text-base text-blue-500";
+      } else {
+        likeIcon.className = "fa-regular fa-thumbs-up text-base";
+      }
+
+      if (userDislikedVideos.has(currentVideoId)) {
+        dislikeIcon.className = "fa-solid fa-thumbs-down text-base text-blue-500";
+      } else {
+        dislikeIcon.className = "fa-regular fa-thumbs-down text-base";
+      }
+    }
+
+    /* Subscription Logic */
+    function toggleSubscribe() {
+      const video = sampleVideos.find(v => v.id === currentVideoId);
+      if (!video) return;
+
+      if (subscribedChannels.has(video.channelName)) {
+        subscribedChannels.delete(video.channelName);
+        showNotification(`Unsubscribed from ${video.channelName}`);
+      } else {
+        subscribedChannels.add(video.channelName);
+        showNotification(`Subscribed to ${video.channelName}`);
+      }
+
+      updateSubscribeButtonUI(video.channelName);
+      renderSidebarSubscriptions();
+    }
+
+    function updateSubscribeButtonUI(channelName) {
+      const btn = document.getElementById('subscribeBtn');
+      if (subscribedChannels.has(channelName)) {
+        btn.innerText = 'Subscribed';
+        btn.className = 'ml-2 px-4 py-2 bg-yt-surface hover:bg-yt-hover text-zinc-300 font-semibold rounded-full text-sm transition';
+      } else {
+        btn.innerText = 'Subscribe';
+        btn.className = 'ml-2 px-4 py-2 bg-white hover:bg-zinc-200 text-black font-semibold rounded-full text-sm transition shadow';
+      }
+    }
+
+    /* Comments Section Controller */
+    function renderComments(comments) {
+      const list = document.getElementById('commentsList');
+      document.getElementById('commentsCount').innerText = `(${comments.length})`;
+
+      if (comments.length === 0) {
+        list.innerHTML = `<p class="text-xs text-zinc-500 italic">No comments yet. Be the first to start the conversation!</p>`;
+        return;
+      }
+
+      list.innerHTML = comments.map(c => `
+        <div class="flex items-start gap-3">
+          <img src="${c.avatar}" alt="${c.name}" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+          <div class="flex flex-col">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-white">${c.name}</span>
+              <span class="text-[10px] text-zinc-400">${c.time}</span>
+            </div>
+            <p class="text-sm text-zinc-200 mt-1">${c.text}</p>
+            <div class="flex items-center gap-4 mt-2 text-xs text-zinc-400">
+              <button class="hover:text-white flex items-center gap-1">
+                <i class="fa-regular fa-thumbs-up"></i>
+                <span>${c.likes || 0}</span>
+              </button>
+              <button class="hover:text-white"><i class="fa-regular fa-thumbs-down"></i></button>
+              <button class="hover:text-white font-medium">Reply</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addComment() {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (!text || !currentVideoId) return;
+
+      const video = sampleVideos.find(v => v.id === currentVideoId);
+      const newComment = {
+        name: 'You',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        text: text,
+        time: 'Just now',
+        likes: 0
+      };
+
+      video.comments.unshift(newComment);
+      renderComments(video.comments);
+      input.value = '';
+      showNotification('Comment added successfully!');
+    }
+
+    /* Render Sidebar Subscriptions */
+    function renderSidebarSubscriptions() {
+      const container = document.getElementById('sidebarSubscriptions');
+      const uniqueChannels = Array.from(subscribedChannels);
+
+      if (uniqueChannels.length === 0) {
+        container.innerHTML = `<p class="text-xs text-zinc-500 px-3 py-1">No channels yet</p>`;
+        return;
+      }
+
+      container.innerHTML = uniqueChannels.map(chName => {
+        const matchingVideo = sampleVideos.find(v => v.channelName === chName);
+        const avatar = matchingVideo ? matchingVideo.channelAvatar : 'https://placehold.co/100x100/272727/ffffff?text=CH';
+        return `
+          <a href="#" onclick="showChannelPage('${chName}'); return false;" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-zinc-300 hover:bg-yt-surface transition">
+            <img src="${avatar}" class="w-6 h-6 rounded-full object-cover">
+            <span class="truncate">${chName}</span>
+          </a>
+        `;
+      }).join('');
+    }
+
+    /* Section Navigation Switcher */
+    function showSection(sectionName) {
+      const feedSec = document.getElementById('feedSection');
+      const customSec = document.getElementById('customSection');
+      const categoryContainer = document.getElementById('categoryContainer');
+
+      // Highlight active sidebar item
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('bg-yt-surface', 'text-white');
+        el.classList.add('text-zinc-300');
+      });
+
+      const activeNav = document.getElementById(`nav-${sectionName}`);
+      if (activeNav) {
+        activeNav.classList.add('bg-yt-surface', 'text-white');
+      }
+
+      if (sectionName === 'home') {
+        feedSec.classList.remove('hidden');
+        customSec.classList.add('hidden');
+        categoryContainer.classList.remove('hidden');
+        return;
+      }
+
+      feedSec.classList.add('hidden');
+      categoryContainer.classList.add('hidden');
+      customSec.classList.remove('hidden');
+
+      const header = document.getElementById('customSectionHeader');
+      const content = document.getElementById('customSectionContent');
+
+      if (sectionName === 'subscriptions') {
+        header.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-red-600/20 text-red-500 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">Subscriptions</h1>
+            <p class="text-sm text-zinc-400">Latest videos from channels you follow</p>
+          </div>
+        `;
+        const subVideos = sampleVideos.filter(v => subscribedChannels.has(v.channelName));
+        renderCardGrid(content, subVideos, 'No videos from subscriptions.');
+      } 
+      else if (sectionName === 'history') {
+        header.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-blue-600/20 text-blue-500 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">Watch History</h1>
+            <p class="text-sm text-zinc-400">Videos you have recently viewed</p>
+          </div>
+        `;
+        renderCardGrid(content, watchHistory, 'You have not watched any videos yet.');
+      } 
+      else if (sectionName === 'liked') {
+        header.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-emerald-600/20 text-emerald-500 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-thumbs-up"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">Liked Videos</h1>
+            <p class="text-sm text-zinc-400">Videos you have thumbs up'd</p>
+          </div>
+        `;
+        const likedVids = sampleVideos.filter(v => userLikedVideos.has(v.id));
+        renderCardGrid(content, likedVids, 'No liked videos yet.');
+      }
+      else if (sectionName === 'library') {
+        header.innerHTML = `
+          <div class="w-12 h-12 rounded-full bg-purple-600/20 text-purple-500 flex items-center justify-center text-xl">
+            <i class="fa-solid fa-folder"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-white">Library</h1>
+            <p class="text-sm text-zinc-400">Your collection and saved content</p>
+          </div>
+        `;
+        renderCardGrid(content, sampleVideos.slice(0, 4), 'Library is empty.');
+      }
+    }
+
+    function renderCardGrid(container, list, emptyMsg) {
+      if (!list || list.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full py-16 text-center text-zinc-500">
+            <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+            <p class="text-base">${emptyMsg}</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = list.map(v => `
+        <div class="video-card flex flex-col gap-3 cursor-pointer group" onclick="openVideoModal('${v.id}')">
+          <div class="relative aspect-video rounded-xl overflow-hidden bg-zinc-800">
+            <img src="${v.thumbnail}" alt="${v.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute bottom-2 right-2 bg-black/80 text-white text-xs font-medium px-2 py-0.5 rounded">${v.duration}</span>
+          </div>
+          <div class="flex gap-3 px-0.5">
+            <img src="${v.channelAvatar}" alt="${v.channelName}" class="w-9 h-9 rounded-full object-cover flex-shrink-0 mt-0.5">
+            <div class="flex flex-col">
+              <h3 class="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-blue-400 transition-colors">${v.title}</h3>
+              <p class="text-xs text-zinc-400 mt-1">${v.channelName}</p>
+              <div class="text-xs text-zinc-400 flex items-center gap-1 mt-0.5">
+                <span>${v.views} views</span> • <span>${v.uploaded}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showChannelPage(channelName) {
+      searchQuery = channelName;
+      triggerSearch();
+    }
+
+    /* Helper Utilities */
+    function resetFilters() {
+      currentCategory = 'All';
+      searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('mobileSearchInput').value = '';
+      renderCategories();
+      renderFeed();
+    }
+
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    }
+
+    function shareVideo() {
+      document.execCommand('copy');
+      showNotification('Video link copied to clipboard!');
+    }
+
+    function showNotification(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      toastMsg.innerText = msg;
+      
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 3000);
+    }
+
+    function setupEventListeners() {
+      const toggleBtn = document.getElementById('toggleSidebar');
+      const sidebar = document.getElementById('sidebar');
+      const mainContent = document.getElementById('mainContent');
+
+      toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('hidden');
+        if (sidebar.classList.contains('hidden')) {
+          mainContent.classList.remove('md:ml-64');
+        } else {
+          mainContent.classList.add('md:ml-64');
+        }
+      });
+    }
+  </script>
+</body>
+</html>
